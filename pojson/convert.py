@@ -3,15 +3,19 @@ import polib
 import os
 import argparse
 
-def po2dict(po):
+def po2dict(po, skip_headers=False, flat=False, keep=False):
     """Convert po object to dictionary data structure (ready for JSON).
     """
     result = {}
-    
-    result[''] = po.metadata.copy()
+    if not skip_headers:
+        result[''] = po.metadata.copy()
+    if flat:
+        for entry in po:
+            result[entry.msgid] = entry.msgstr
+        return result
 
     for entry in po:
-        if entry.obsolete:
+        if entry.obsolete and not keep:
             continue
 
         if entry.msgctxt:
@@ -29,7 +33,7 @@ def po2dict(po):
                 plural.append(msgstr)
     return result
 
-def convert(po_file, encoding=None, pretty_print=False):
+def convert(po_file, encoding=None, pretty_print=False, skip_headers=False, flat=False, keep=False):
     if encoding is None:
         po = polib.pofile(po_file,
                           autodetect_encoding=True)
@@ -37,9 +41,9 @@ def convert(po_file, encoding=None, pretty_print=False):
         po = polib.pofile(po_file,
                           autodetect_encoding=False,
                           encoding=encoding)
-    
-    data = po2dict(po)
-    
+
+    data = po2dict(po, skip_headers, flat, keep)
+
     if not pretty_print:
         result = simplejson.dumps(data, ensure_ascii=False, sort_keys=True)
     else:
@@ -47,4 +51,4 @@ def convert(po_file, encoding=None, pretty_print=False):
                                   ensure_ascii=False)
     return result
 
-        
+
